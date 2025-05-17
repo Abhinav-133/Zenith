@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Emergency Mesh Chat + Map</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background-color: #2193b0;
+            color: #fff;
+        }
+        .tab-content {
+            display: none;
+            padding: 20px;
+
+            overflow-y: auto;
+            flex: 1;
+            color: #000000;
+            position: absolute;
+            top: 60px; /* enough space for the heading */
+            bottom: 0%; /* space for tab bar */
+            width: 100%;
+            font-size: 2rem;;
+        }
+
+        h2 {
+            text-align: center;
+            margin: 20px;
+            font-size: 2rem;
+            font-weight: 600;
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: space-around;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background-color: #2e3b4e;
+            border-top: 2px solid #ccc;
+            padding: 10px 0;
+            z-index: 10;
+        }
+
+        .tab {
+            text-align: center;
+            padding: 10px;
+            font-size: 1rem;
+            color: #b0b8bf;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            color: #fff;
+            background-color: #4e5d6b;
+            border-radius: 5px 5px 0 0;
+            font-weight: bold;
+        }
+
+        .tab:hover {
+            background-color: #3a4855;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 15px;
+            overflow-y: auto;
+            flex: 1;
+            position: absolute;
+            top: 80px;
+            bottom: 60px;
+            width: 100%;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        #chat {
+            background-color: rgba(255, 255, 255, 0.8);
+            height: 60vh;
+            overflow-y: scroll;
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 15px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .input-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        #nameInput, #msgInput {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 1rem;
+            background-color: #fff;
+            color: #000;
+        }
+
+        #nameInput {
+            flex: 1 1 20%;
+            min-width: 100px;
+        }
+
+        #msgInput {
+            flex: 1 1 60%;
+            min-width: 150px;
+        }
+
+        button {
+            flex: 1 1 15%;
+            min-width: 80px;
+            padding: 10px;
+            background-color: #4e5d6b;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #3a4855;
+        }
+
+        .message {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            color: #000;
+        }
+
+        .message img.avatar {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            margin-right: 10px;
+            border: 2px solid #ffffff;
+        }
+
+        .message .bubble {
+            background-color: #e0e0e0;
+            padding: 10px;
+            border-radius: 15px;
+            max-width: 70%;
+            font-size: 1rem;
+        }
+
+        .mine .bubble {
+            background-color: #F4CE9B;
+        }
+
+        .other .bubble {
+            background-color: #fff;
+        }
+
+        #map {
+            width: 100%;
+            height: 72vh;
+            border-radius: 10px;
+        }
+
+        #settingsTab {
+            background-color: rgba(255, 255, 255, 0.9);
+            margin: 10px 20px 30px 10px;
+            max-width: 95%;
+            border-radius: 10px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (max-width: 768px) {
+            h2 {
+                font-size: 1.5rem;
+            }
+            .tab {
+                font-size: 0.9rem;
+                padding: 8px;
+            }
+            .message img.avatar {
+                width: 35px;
+                height: 35px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .tab-content {
+                top: 70px;
+                bottom: 60px;
+                padding: 10px;
+            }
+
+            #chat {
+                height: 50vh;
+            }
+
+            .input-group {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+        </style>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    </head>
+    <body>
+        <h2>Emergency Mesh Chat</h2>
+
+        <!-- Chat Tab -->
+        <div id="chatTab" class="tab-content active">
+            <div id="chat"></div>
+            <div class="input-group">
+                <input id="nameInput" type="text" placeholder="Your Name" />
+                <input id="msgInput" type="text" placeholder="Type a message" />
+                <button onclick="sendMsg()">Send</button>
+            </div>
+        </div>
+
+        <!-- Map Tab -->
+        <div id="mapTab" class="tab-content">
+            <div id="map"></div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div id="settingsTab" class="tab-content">
+            <h3 class="support-header">Help & Suppport</h3>
+            <p>✅ Keep the app open or running in background.<br>
+
+                ✅ Stay within range of other devices (Wi-Fi Direct range).<br>
+
+                🚫 Don’t turn off Wi-Fi or battery saver, as this may disconnect you from the mesh.<br>
+
+                ✅ Text Communication: Use the chat feature to coordinate with others or respond to community check-ins.
+
+            </p><br>
+            <h3 class="support-header">सहायता और समर्थन </h3><br>
+            <p>
+                ✅ ऐप को खुला रखें या बैकग्राउंड में चलने दें।<br>
+                ✅ अन्य डिवाइसों के पास रहें (Wi-Fi Direct रेंज के भीतर)।<br>
+                🚫 Wi-Fi या बैटरी सेवर बंद न करें, इससे आप मेष नेटवर्क से डिसकनेक्ट हो सकते हैं।<br>
+                ✅ पाठ संदेश (Text Communication): दूसरों के साथ समन्वय के लिए चैट फीचर का उपयोग करें या सामुदायिक जांचों का उत्तर दें।<br>
+            </p>
+
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="tabs">
+            <div class="tab active" onclick="showTab('chatTab')">Chat</div>
+            <div class="tab" onclick="showTab('mapTab')">Map</div>
+            <div class="tab" onclick="showTab('settingsTab')">Help & Support</div>
+        </div>
+
+        <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+        <script>
+        const ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`);
+        const chat = document.getElementById('chat');
+        const markers = {};
+        let map, myLat, myLng, avatar;
+        let mapInitialized = false;
+
+        avatar = `avatars/avatar${Math.floor(Math.random() * 2) + 1}.png`;
+
+        ws.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            if (data.sender && data.content) {
+                const div = document.createElement('div');
+                div.classList.add('message');
+                const isMine = data.sender === document.getElementById('nameInput').value;
+                div.classList.add(isMine ? 'mine' : 'other');
+
+                const avatarImg = document.createElement('img');
+                avatarImg.src = data.avatar || '/avatars/avatar1.png';
+                avatarImg.classList.add("avatar");
+
+                const text = document.createElement('div');
+                text.textContent = `${data.sender}: ${data.content}`;
+                text.classList.add("bubble");
+
+                if (isMine) {
+                    div.appendChild(text);
+                    div.appendChild(avatarImg);
+                } else {
+                    div.appendChild(avatarImg);
+                    div.appendChild(text);
+                }
+
+                chat.appendChild(div);
+                chat.scrollTop = chat.scrollHeight;
+            }
+
+            if (data.lat && data.lng) {
+                const label = data.sender || data.sender_ip || "Unknown";
+                if (!markers[label]) {
+                    markers[label] = L.marker([data.lat, data.lng]).addTo(map).bindPopup(label);
+                } else {
+                    markers[label].setLatLng([data.lat, data.lng]);
+                }
+            }
+            if (data.type === 'users' && Array.isArray(data.users)) {
+                const userList = document.getElementById('userList');
+                userList.innerHTML = ''; // Clear existing list
+                data.users.forEach(user => {
+                    const li = document.createElement('li');
+                    li.textContent = user;
+                    userList.appendChild(li);
+                });
+            }
+
+        };
+
+        function sendMsg() {
+            const name = document.getElementById('nameInput').value || "Anonymous";
+            const msg = document.getElementById('msgInput').value;
+            if (!msg) return;
+
+            ws.send(JSON.stringify({ sender: name, content: msg, avatar }));
+            document.getElementById('msgInput').value = '';
+        }
+
+        function sendLocation(lat, lng) {
+            const name = document.getElementById('nameInput').value || "Anonymous";
+            ws.send(JSON.stringify({ sender: name, lat, lng, avatar }));
+        }
+
+        function initMap(lat, lng) {
+            myLat = lat;
+            myLng = lng;
+
+            map = L.map('map').setView([lat, lng], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: 'By TeamZenith',
+            }).addTo(map);
+
+            L.marker([lat, lng]).addTo(map).bindPopup("You").openPopup();
+
+            if (ws.readyState === WebSocket.OPEN) {
+                sendLocation(lat, lng);
+            } else {
+                ws.onopen = () => sendLocation(lat, lng);
+            }
+
+            mapInitialized = true;
+        }
+
+        function watchLocation() {
+            navigator.geolocation.watchPosition(
+                position => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    if (myLat !== lat || myLng !== lng) {
+                        myLat = lat;
+                        myLng = lng;
+                        sendLocation(lat, lng);
+                        if (mapInitialized) {
+                            map.setView([lat, lng]);
+                        }
+                    }
+                },
+                () => {
+                    alert("Location permission denied. Using fallback location.");
+                    initMap(28.6139, 77.2090);
+                }
+            );
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            position => initMap(position.coords.latitude, position.coords.longitude),
+            () => {
+                alert("Location permission denied. Using fallback location.");
+                initMap(28.6139, 77.2090);
+            }
+        );
+
+        watchLocation();
+
+        function showTab(tabId) {
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabs.forEach(tab => tab.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+
+            document.querySelector(`.tab[onclick="showTab('${tabId}')"]`).classList.add('active');
+            const tabContent = document.getElementById(tabId);
+            tabContent.classList.add('active');
+
+            if (tabId === 'mapTab' && map) {
+                setTimeout(() => {
+                    map.invalidateSize();
+                }, 300);
+            }
+            if (tabId === 'settingsTab') {
+                ws.send(JSON.stringify({ type: 'get_users' }));
+            }
+        }
+        </script>
+    </body>
+</html>
+
+
